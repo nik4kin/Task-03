@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Задание 3</title>
+  </head>
+  <body>
+    <h3>Task 03</h3>
+    <form name="startButton">
+        <input type="button" name="btn" value="Старт"></input>
+    </form>
+    <!-- Создаем canvas элемент для использования графики 500 на 500 пикселей -->
+    <canvas id="myCanvas" width="500" height="500"></canvas>
+
+    <script>
+
+        var mouseX = 0;
+        var mouseY = 0; 
+        var clickPositionX = 0;
+        var clickPositionY = 0;
+        var boardClickColorsX = 0;
+        var boardClickColorsY = 0;
+        var pairsFinded = 0;
+        var clickNumber = 1;
+        var tempColor = "white";
+        var mm = 0;
+        var ss = 0;
+        var ms = 0;
+        var totalTime = "";
+        // Для выноса переменной из функции, теста ради
+        var myVar = {};
+
+        // Массив с цветами пустого поля
+        var boardColors = [
+            ["white", "white", "white", "white"],
+            ["white", "white", "white", "white"],
+            ["white", "white", "white", "white"],
+            ["white", "white", "white", "white"]]; 
+
+        // Начальный массив с парами восьми цветов
+        var boardRandomColors = [
+            ["gray", "gray", "red", "red"],
+            ["orange", "orange", "yellow", "yellow"],
+            ["green", "green", "aqua", "aqua"],
+            ["blue", "blue", "Fuchsia", "Fuchsia"]];
+        
+        // Отрабатываем кнопку Старт запуском функции start()   
+        var startButton = document.startButton.btn;
+            startButton.addEventListener("click", start);
+
+        // получаем холст для рисования
+        var canvas = document.getElementById("myCanvas"); 
+        var context = canvas.getContext("2d");
+        context.font = "20px Verdana";
+        context.strokeStyle = "black";
+
+        // Рисуем пустое поле
+        drawBoard(boardColors);
+    
+        // ...нажатие на кнопку Старт
+        function start() {
+            // Обнуляем таймер
+            ss = 0;
+            ms = 0;
+            mm = 0;
+            startTime = Date.now ();
+            // Запускаем таймер
+            myTimer = setInterval(timer, 1);
+            myVar.isGameStart = true;
+            var positionX = 0;
+            var positionY = 0;
+            var tempString = "";
+            for (i = 0; i < 4; i++) {
+                for (j = 0; j < 4; j++) {
+                    // "Обнуляем" массив с ходами
+                    boardColors[i][j]="white";
+                    // Перемешиваем цвета случайным образом
+                    positionX = Math.floor(Math.random() * 4);
+                    positionY = Math.floor(Math.random() * 4);
+                    tempString = boardRandomColors [i][j];
+                    boardRandomColors [i][j] = boardRandomColors [positionX][positionY];
+                    boardRandomColors [positionX][positionY] = tempString;
+                }
+            }
+            // Отрисовка игрового поля 
+            drawBoard (boardRandomColors);
+        }
+        
+        // щелчок левой кнопки мыши на поле canvas
+            canvas.addEventListener("click", e => {
+            mouseX = e.layerX;
+            mouseY = e.layerY;
+            // если флаг "игра запущена" == нажата кнопка старт...
+            if (myVar.isGameStart) {
+            // Если клик на одном из квадратов и квадрат не открыт (белый)
+            if (mouseX >= 50 && mouseX <= 450 && mouseY >=50 && mouseY <= 450) {
+                if (boardColors [getArrayPosition(mouseX)][getArrayPosition(mouseY)] == "white") {
+                // если первый клик 
+                if (clickNumber == 1) {
+                // преобразуем координаты указателя мыши в координаты соответствующие клетке в массиве
+                clickPositionX = getArrayPosition(mouseX);
+                clickPositionY = getArrayPosition(mouseY);
+                // записываем цвет в массив с ходами boardColors из массива boardRandomColors
+                boardColors [clickPositionX][clickPositionY] = boardRandomColors [clickPositionX][clickPositionY];
+                clickNumber++;
+                tempColor = boardColors [clickPositionX][clickPositionY];
+                }
+                    // если второй клик (ищем пару, цвет определен)
+                    if (clickNumber == 2) {
+                        if (clickPositionX != getArrayPosition(mouseX) || clickPositionY != getArrayPosition(mouseY)) {
+                            // проверяем совпадение цвета первого и второго клика:
+                            if (boardRandomColors [getArrayPosition(mouseX)][getArrayPosition(mouseY)] == tempColor) {
+                                // 1. цвета совпали => увеличиваем значение переменной равной количеству найденных пар
+                                pairsFinded++;
+                                // записываем цвет в массив с ходами boardColors из массива boardRandomColors
+                                boardColors [getArrayPosition(mouseX)][getArrayPosition(mouseY)] = 
+                                boardRandomColors [getArrayPosition(mouseX)][getArrayPosition(mouseY)];
+                                clickNumber = 1;
+                            } // 2. цвета не совпали
+                            else {
+                                // Возвращаем значения массива с ходами boardColors к состоянию до первого клика
+                                boardColors [clickPositionX][clickPositionY] = "white";
+                                clickNumber = 1;
+                                // не удалось подсветить клетку при несовпадении цветов =( не работает setTimeout
+                                //lightSquare(getArrayPosition(mouseX),getArrayPosition(mouseY),
+                                //boardRandomColors[getArrayPosition(mouseX)][getArrayPosition(mouseY)]);
+                                //setTimeout(lightSquare(getArrayPosition(mouseX),getArrayPosition(mouseY), "white"), 1500);
+                            }
+                        }
+                    }               
+                }
+            }
+            drawBoard(boardColors);
+            // Если открыты все клетки...
+            if (pairsFinded == 8) {
+                // возвращаем значение из функции таймера и записываем в переменную
+                totalTime = timer();
+                pairsFinded = 0;
+                myVar.isGameStart = false;
+                context.fillStyle = "white";
+                context.fillRect(50, 460, 200, 40);
+                win = true;
+                stopTimer();
+                // Поздравление, состояние таймера
+                if (win) {
+                    alert ("Вы выиграли!\nЗатраченное время: " + totalTime);
+                    win = false;
+                }
+            }
+            };
+        });    
+        
+        // определяем координаты поля для массива относительно координат указателя мыши
+        function getArrayPosition(x) {
+            if (x > 49 && x < 150 ) return 0;
+            if (x > 149 && x < 250 ) return 1;
+            if (x > 249 && x < 350 ) return 2;
+            if (x > 349 && x < 450 ) return 3;
+        }
+        
+        // функция отрисовки игрового поля
+        function drawBoard(array) {
+            context.strokeStyle = "black";
+            for (i = 0; i < 4; i++) {
+                for (j = 0; j < 4; j++) {
+                    context.fillStyle = array[i][j];
+                    context.fillRect(50 + i * 100, 50 + j * 100, 100, 100);
+                    context.strokeRect(50 + i * 100, 50 + j * 100, 100, 100);
+
+                }
+            }
+            context.strokeRect(50, 50, 400, 400);
+        } 
+        // Тестовая функция, не удалось победить пустой квадрат на поле перед выводом победного alert`а 
+        function lightSquare(x, y, z) {
+            context.strokeStyle = "black";
+            context.fillStyle = z;
+            context.fillRect(50 + x * 100, 50 + y * 100, 100, 100);
+            context.strokeRect(50 + x * 100, 50 + y * 100, 100, 100);
+            context.strokeRect(50, 50, 400, 400);
+        } 
+        // таймер
+        function timer() {
+            var ms = Date.now () - startTime;
+            var ss = Math.floor (ms / 1000);
+            ms = ms % 1000;
+            var mm = Math.floor (ss / 60);
+            ss = ss % 60;
+            context.fillStyle = "white";
+            context.fillRect(50, 460, 200, 40);
+            context.fillStyle = "black";
+            context.fillText(mm + ":" + ss + ":" + ms, 50, 480);
+            return (mm + ":" + ss + ":" + ms);
+        }
+        // остановка таймера
+        function stopTimer() {
+            clearInterval(myTimer);
+        }
+
+    </script>
+  
+  </body>
+</html>
